@@ -1,0 +1,41 @@
+<div class="mb-4">
+    <h2 class="text-success">
+        Login
+    </h2>
+    <div>Dont have any account?
+        <a routerLink="/user/signup" class="text-decoration-none fw-medium text-success inline-block">Sign up</a>
+    </div>
+</div>
+<form [formGroup]="form" (submit)="onSubmit()">
+<div class="mb-3">
+    <input type="text" 
+        class="form-control bg-body-secondary"
+        formControlName="email"
+        placeholder="Email">
+         <div *ngIf="hasDisplayableError('email') && form.controls['email']?.hasError('required')" class="error-feedback" >
+            Email is required</div>
+            <div *ngIf="form.get('email')?.hasError('email')" class="error-feedback" >
+            Email error</div>
+</div>
+<div class="mb-3">
+    <input type="password" 
+        class="form-control bg-body-secondary"
+        formControlName="password"
+        placeholder="Password">
+        <ng-container [ngSwitch]="form.controls['password'].errors">
+            <div class="error-feedback" 
+                *ngSwitchCase="form.controls['password'].hasError('required')" >
+                Password is required
+            </div>
+            <div class="error-feedback" 
+                *ngSwitchCase="form.controls['password'].hasError('minLength')" >
+                At least 6 characters
+            </div>        
+        </ng-container>        
+</div>
+<div class="mt-4">
+    <button type="submit" class="btn btn-success w-100 rounded-3">
+        Register
+    </button>
+</div>
+</form>

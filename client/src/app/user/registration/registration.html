@@ -1,0 +1,62 @@
+<div class="mb-4">
+    <h2 class="text-success">
+        Sign up
+    </h2>
+    <div>Already have account?
+        <a routerLink="/user/signin" class="text-decoration-none fw-medium text-success inline-block">Sign in</a>
+    </div>
+</div>
+<form [formGroup]="form" (submit)="onSubmit()">
+<div class="mb-3">    
+    <input type="text" 
+        class="form-control bg-body-secondary"
+        formControlName="fullName"
+        placeholder="fullName">
+        @if(hasDisplayableError('fullName') && form.controls['fullName']?.hasError('required')){
+            <div class="error-feedback" >FullName is required</div>
+        }
+</div>
+<div class="mb-3">
+    <input type="text" 
+        class="form-control bg-body-secondary"
+        formControlName="email"
+        placeholder="Email">
+         <div *ngIf="hasDisplayableError('email') && form.controls['email']?.hasError('required')" class="error-feedback" >
+            Email is required</div>
+            <div *ngIf="form.get('email')?.hasError('email')" class="error-feedback" >
+            Email error</div>
+</div>
+<div class="mb-3">
+    <input type="password" 
+        class="form-control bg-body-secondary"
+        formControlName="password"
+        placeholder="Password">
+        <ng-container [ngSwitch]="form.controls['password'].errors">
+            <div class="error-feedback" 
+                *ngSwitchCase="form.controls['password'].hasError('required')" >
+                Password is required
+            </div>
+            <div class="error-feedback" 
+                *ngSwitchCase="form.controls['password'].hasError('minLength')" >
+                At least 6 characters
+            </div>        
+        </ng-container>        
+</div>
+<div class="mb-3">
+    <input type="password" 
+        class="form-control bg-body-secondary"
+        formControlName="confirmPassword"
+        placeholder="Confirm Password">
+        @if(hasDisplayableError('confirmPassword') && form.get('confirmPassword')?.hasError('required')){
+            <div class="error-feedback" >Confirm Password is required</div>
+        }
+        @if(hasDisplayableError('confirmPassword') && form.get('confirmPassword')?.hasError('passwordMisswatch')){
+            <div class="error-feedback" >Confirm Password is not matched</div>
+        }
+</div>
+<div class="mt-4">
+    <button type="submit" class="btn btn-success w-100 rounded-3">
+        Register
+    </button>
+</div>
+</form>
