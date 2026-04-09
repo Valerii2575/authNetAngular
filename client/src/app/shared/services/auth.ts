@@ -16,4 +16,8 @@ export class Auth {
   createUser(formData: any) : Observable<any>{
     return this.http.post<any>(this.baseUrl + '/signup', formData);
   }
+
+  signin(formData: any){
+    return this.http.post<any>(this.baseUrl + `/signin`, formData);
+  }
 }

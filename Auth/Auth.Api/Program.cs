@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Diagnostics.CodeAnalysis;
+using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -99,11 +101,48 @@ app.MapPost("/api/signup", async (
     }
 });
 
+app.MapPost("/api/signin", async (
+    UserManager<AppUser> userManager,
+    [FromBody] LoginnModel loginModel) =>
+{
+    var user = await userManager.FindByEmailAsync(loginModel.Email);
+    if(user != null && await userManager.CheckPasswordAsync(user, loginModel.Password)){
+        var signKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]));
+
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity(new Claim[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Name, user.FullName)
+            }),
+            Expires = DateTime.UtcNow.AddHours(1),
+            SigningCredentials = new SigningCredentials(signKey, SecurityAlgorithms.HmacSha256Signature)
+        };
+
+        var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+        var securityToken = tokenHandler.CreateToken(tokenDescriptor);
+        var token = tokenHandler.WriteToken(securityToken);
+        return Results.Ok(new { Token = token });
+    }
+    else
+    {
+        return Results.BadRequest(new {message= "User or Password is incorrect"});
+    }
+});
+
 app.Run();
 
 public class UserRegistrationModel
 {
     public string FullName { get; set; }
+    public string Email { get; set; }
+    public string Password { get; set; }
+}
+
+public class LoginnModel
+{
     public string Email { get; set; }
     public string Password { get; set; }
 }

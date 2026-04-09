@@ -8,6 +8,9 @@ import { Dashboard } from './dashboard/dashboard';
 
 export const routes: Routes = [
     {
+        path: '', redirectTo: '/user/signin', pathMatch: 'full'
+    },
+    {
         path: '', component: Dashboard
     },
     {        
@@ -16,5 +19,8 @@ export const routes: Routes = [
             {path: 'signup', component: Registration},
             {path: 'signin', component: Login}
         ]
+    },
+    {
+        path: 'dashboard', component: Dashboard
     }
 ];

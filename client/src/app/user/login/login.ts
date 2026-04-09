@@ -2,7 +2,8 @@ import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Auth } from '../../shared/services/auth';
-import { RouterLink } from '@angular/router';
+import {Router, RouterLink} from '@angular/router';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-login',
@@ -12,14 +13,16 @@ import { RouterLink } from '@angular/router';
 })
 export class Login {
 
-
   form: FormGroup;
 
   isSubmitted: boolean = false;
 
   authService = inject(Auth);
+  private router = inject(Router);
+  toastr = inject(ToastrService);
 
-  constructor(public formBuilder: FormBuilder){
+  constructor(public formBuilder: FormBuilder
+  ){
   this.form = this.formBuilder.group({
     email: ['', {validators: [Validators.required, Validators.email]}],
     password: ['', {validators: [Validators.required]}]    
@@ -28,6 +31,22 @@ export class Login {
 
 onSubmit() {
   this.isSubmitted = true;
+  if(!this.form.valid)
+    return;
+
+  this.authService.signin(this.form.value).subscribe({
+    next:  (res: any) =>{
+      localStorage.setItem('token', res.token);
+      this.router.navigateByUrl('/dashboard');
+    },
+    error: (res:any) => {
+      if(res.status == 400)
+        this.toastr.error('incorrect email or password', 'Login failed');
+      else
+        console.log(res.value);
+    }
+  })
+
 }
 
 hasDisplayableError(controlName: string) : Boolean {
