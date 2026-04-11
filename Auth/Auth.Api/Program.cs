@@ -1,12 +1,6 @@
+using Auth.Api.Controllers;
+using Auth.Api.Extensions;
 using Auth.Api.Models;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using System.Diagnostics.CodeAnalysis;
-using System.Security.Claims;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,38 +10,12 @@ builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
+builder.Services.AddInjectDbContext(builder.Configuration);
+builder.Services.AddAppConfig(builder.Configuration);
+builder.Services.AddIdentityHandlersAndStores();
+builder.Services.AddConfigureIdentityOptions();
+builder.Services.AddIdentityAuthentication(builder.Configuration);
 
-
-builder.Services.AddIdentityApiEndpoints<AppUser>()
-    .AddEntityFrameworkStores<AppDbContext>();
-
-builder.Services.AddDbContext<AppDbContext>(
-    options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
-);
-
-builder.Services.AddAuthentication(x =>
-                    {
-                        x.DefaultAuthenticateScheme = IdentityConstants.ApplicationScheme;
-                        x.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-                        //x.DefaultChallengeScheme = IdentityConstants.ApplicationScheme;
-                        //x.DefaultSignInScheme = IdentityConstants.ExternalScheme;
-                        //x.DefaultForbidScheme = IdentityConstants.ApplicationScheme;
-                        //x.DefaultSignOutScheme = IdentityConstants.ApplicationScheme;
-                    })
-            .AddJwtBearer(y =>
-            {
-                y.SaveToken = false;
-                y.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]))
-                    //    ValidateIssuer = false,
-                    //ValidateAudience = false,
-                    //ValidateLifetime = true,
-                    //ValidIssuer = builder.Configuration["Jwt:Issuer"],
-                    //ValidAudience = builder.Configuration["Jwt:Audience"],
-                };
-             });
 
 var app = builder.Build();
 
@@ -62,14 +30,7 @@ if (app.Environment.IsDevelopment())
  
 app.UseHttpsRedirection();
 
-app.UseCors(options =>
-{
-     options.WithOrigins("http://localhost:4200")
-    .AllowAnyHeader()
-    .AllowAnyMethod();
-
-
-});
+app.UseConfigureCORS();
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -79,70 +40,8 @@ app.MapControllers();
 app.MapGroup("/api")
     .MapIdentityApi<AppUser>();
 
-app.MapPost("/api/signup", async (
-    UserManager<AppUser> userManager,
-    [FromBody] UserRegistrationModel model
-    ) =>
-{
-    AppUser user = new AppUser
-    {
-        UserName = model.Email,
-        Email = model.Email,
-        FullName = model.FullName
-    };
-    var result = await userManager.CreateAsync(user, model.Password);
-    if (result.Succeeded)
-    {
-        return Results.Ok(new { Message = "User registered successfully" });
-    }
-    else
-    {
-        return Results.BadRequest(string.Join(";\n", result.Errors.Select(x => x.Description).ToList()));
-    }
-});
-
-app.MapPost("/api/signin", async (
-    UserManager<AppUser> userManager,
-    [FromBody] LoginnModel loginModel) =>
-{
-    var user = await userManager.FindByEmailAsync(loginModel.Email);
-    if(user != null && await userManager.CheckPasswordAsync(user, loginModel.Password)){
-        var signKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]));
-
-        var tokenDescriptor = new SecurityTokenDescriptor
-        {
-            Subject = new ClaimsIdentity(new Claim[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Name, user.FullName)
-            }),
-            Expires = DateTime.UtcNow.AddHours(1),
-            SigningCredentials = new SigningCredentials(signKey, SecurityAlgorithms.HmacSha256Signature)
-        };
-
-        var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
-        var securityToken = tokenHandler.CreateToken(tokenDescriptor);
-        var token = tokenHandler.WriteToken(securityToken);
-        return Results.Ok(new { Token = token });
-    }
-    else
-    {
-        return Results.BadRequest(new {message= "User or Password is incorrect"});
-    }
-});
+app.MapGroup("/api")
+    .MapIdentityUserEndpoints(builder.Configuration);
 
 app.Run();
 
-public class UserRegistrationModel
-{
-    public string FullName { get; set; }
-    public string Email { get; set; }
-    public string Password { get; set; }
-}
-
-public class LoginnModel
-{
-    public string Email { get; set; }
-    public string Password { get; set; }
-}
