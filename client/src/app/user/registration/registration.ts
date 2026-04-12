@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, ValidatorFn, Validators } from '@angular/forms';
-import { ɵEmptyOutletComponent, RouterLink } from "@angular/router";
+import { ɵEmptyOutletComponent, RouterLink, Router } from "@angular/router";
 import { FirstKeyPipe } from '../../shared/pipes/first-key-pipe';
 import { Auth } from '../../shared/services/auth';
 import { error } from 'console';
@@ -13,7 +13,7 @@ import { ToastrService } from 'ngx-toastr';
   templateUrl: './registration.html',
   styleUrl: './registration.css',
 })
-export class Registration {
+export class Registration implements OnInit {
 
   form: FormGroup;
 
@@ -21,6 +21,7 @@ export class Registration {
 
   authService = inject(Auth);
   toastr = inject(ToastrService);
+  private router = inject(Router);
 
 constructor(public formBuilder: FormBuilder){
   this.form = this.formBuilder.group({
@@ -30,6 +31,11 @@ constructor(public formBuilder: FormBuilder){
     confirmPassword: ['',{validators: [Validators.required]}]
   }, {Validators: this.passwordMatchValidator})
 }
+  ngOnInit(): void {
+    if(this.authService.isLoggedIn()){
+      this.router.navigateByUrl('/dashboard');
+    }
+  }
 
 passwordMatchValidator: ValidatorFn = (control: AbstractControl) : null => {
   const password = control.get('password');

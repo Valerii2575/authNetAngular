@@ -11,6 +11,8 @@
 
    |--- dashboard
    |--- shared
+        |--- auth.guard.ts
+        |--- constants.ts
         |--- pipes
                 |-- first-key.pipe.ts
         |--- services
